@@ -9,7 +9,7 @@ plusTwo(x) = x + 2
 
 
 
-@reexport using Base.Iterators: product
+using Base.Iterators: product
 const FactorTable = Dict{NamedTuple,Float64}
 
 struct Variable
