@@ -1,11 +1,15 @@
 module BookBayes
 
-export plusTwo
+using Reexport
+
+export  plusTwo
+
 
 plusTwo(x) = x + 2
 
 
-import Base.Iterators.product
+
+@reexport using Base.Iterators: product
 const FactorTable = Dict{NamedTuple,Float64}
 
 struct Variable
