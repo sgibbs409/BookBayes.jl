@@ -1,5 +1,10 @@
 module BookBayes
 
+export plusTwo
+
+plusTwo(x) = x + 2
+
+
 import Base.Iterators.product
 const FactorTable = Dict{NamedTuple,Float64}
 
