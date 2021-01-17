@@ -1,0 +1,7 @@
+name = "BookBayes"
+uuid = "d8757a7f-57bf-479a-843e-af66a73ebcc0"
+authors = ["spencergibbs "]
+version = "0.0.1"
+
+[compat]
+julia = "1.5"
