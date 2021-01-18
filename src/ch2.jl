@@ -99,3 +99,21 @@ function normalize!(ϕ::Factor)
     end
     return ϕ
 end
+
+
+
+
+"""
+    struct BayesianNetwork
+        vars::Vector{Variable}
+        factors::Vector{Factor}
+        graph::SimpleDiGraph
+    end
+
+Data structure representing a discrete bayesian network.
+"""
+struct BayesianNetwork
+    vars::Vector{Variable}
+    factors::Vector{Factor}
+    graph::SimpleDiGraph
+end

@@ -7,6 +7,7 @@ Library of functions given in Algorithms for Decision Making
 module BookBayes
 
 using Reexport
+using NamedTupleTools
 
 export
         Variable,
