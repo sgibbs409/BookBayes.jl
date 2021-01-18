@@ -117,3 +117,14 @@ struct BayesianNetwork
     factors::Vector{Factor}
     graph::SimpleDiGraph
 end
+
+"""
+    function probability(bn::BayesianNetwork, assignment)
+
+
+"""
+function probability(bn::BayesianNetwork, assignment)
+        select(ϕ) = select(assignment, variablenames(ϕ))
+        probability(ϕ) = ϕ.table[select(ϕ)]
+        return prod(probability(ϕ) for ϕ in bn.factors)
+    end

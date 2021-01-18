@@ -8,6 +8,9 @@ module BookBayes
 
 using Reexport
 using NamedTupleTools
+using LightGraphs
+using IterTools
+
 
 export
         Variable,
