@@ -1,3 +1,9 @@
+
+"""
+    module BookBayes
+
+Library of functions given in Algorithms for Decision Making
+"""
 module BookBayes
 
 using Reexport
