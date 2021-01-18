@@ -10,6 +10,7 @@
 const FactorTable = Dict{NamedTuple,Float64}
 
 
+
 """
     struct Variable
         name::Symbol
@@ -22,6 +23,7 @@ struct Variable
     name::Symbol
     m::Int # number of possible values
 end
+
 
 
 """
@@ -45,6 +47,8 @@ Get Vector of the variable names of all variables in ϕ
 """
 variablenames(ϕ::Factor) = [var.name for var in ϕ.vars]
 
+
+
 """
     function namedtuple(n::Array{Symbol,1}, v::Tuple)
 
@@ -59,12 +63,27 @@ function namedtuple(n::Array{Symbol,1}, v::Tuple)
     return NamedTuple{Tuple(n)}(v)
 end
 
+
+
+"""
+    function assignments(vars::AbstractVector{Variable})
+
+Get a vector of every possible valid namedtuple corresponding to a possible valid (Integer (Categorical)) value assignment of the Variables in vars.
+
+### ARGS
+
+### EXAMPLES
+
+(:a => 3, :b => 1, :c => 7)
+"""
 function assignments(vars::AbstractVector{Variable})
     n = [var.name for var in vars]
     #n = Tuple([var.name for var in vars])
     #return [NamedTuple{n}(v) for v in product((1:v.m for v in vars)...)]
     return [namedtuple(n, v) for v in product((1:v.m for v in vars)...)]
 end
+
+
 
 
 """

@@ -11,7 +11,7 @@ end
 #push!(LOAD_PATH, "../src/")
 makedocs(
     modules = [BookBayes],
-    sitename = "BookBayesjl Documentation",
+    sitename = "BookBayes.jl Documentation",
     pages = [
         "Index" => "index.md",
         "Another page" => "anotherPage.md",
