@@ -35,6 +35,9 @@ probability(bn, assignment)
 
 k = assignments(ϕ.vars);
 @show k
+
+
+
 @show k[2,1,1]
 @show k[2,1,1].x
 @show k[2,1,1].y
@@ -43,6 +46,39 @@ k = assignments(ϕ.vars);
 display(ϕ.table);
 display(ϕ.vars);
 display(variablenames(ϕ));
+
+
+A = Variable(:A, 3);
+ϕA = Factor([A], FactorTable(
+    (a=1,) => 0.40,
+    (a=2,) => 0.50,
+    (a=3,) => 0.1,
+));
+
+ϕAy = ϕA * ϕy
+ϕyz = ϕy * ϕz;
+ϕAyz = ϕAy * ϕyz
+
+
+
+
+
+
+
+
+
+
+
+
+[v for (k,v) in ϕAyz.table]
+sum([v for (k,v) in ϕAyz.table])
+
+sum([v for (k,v) in ϕAy.table])
+sum([v for (k,v) in ϕyz.table])
+
+
+
+
 
 
 @test true

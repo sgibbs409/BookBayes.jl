@@ -10,7 +10,7 @@ using Reexport
 using NamedTupleTools
 using LightGraphs
 using IterTools
-
+using Distributions
 
 export
         Variable,
@@ -21,12 +21,23 @@ export
         normalize!,
         FactorTable,
         BayesianNetwork,
-        probability
+        probability,
+        marginalize,
+        in_scope,
+        condition,
+        ExactInference,
+        infer,
+        VariableElimination,
+        DirectSampling,
+        blanket,
+        update_gibbs_sample,
+        gibbs_sample,
+        GibbsSampling
 
 
 using Base.Iterators: product
 
 include("ch2.jl")
-
+include("ch3.jl")
 
 end # module
