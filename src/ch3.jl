@@ -61,8 +61,15 @@ function marginalize(ϕ::Factor, name)
 end
 
 
-# predicate function: true if any Variable v in ϕ has v.name == name
-#   ie if name is a variable in ϕ
+"""
+    function in_scope(name, ϕ)
+
+predicate function: true if any Variable v in ϕ has v.name == name (ie if name is a variable in ϕ)
+
+# Arguments
+* name::Symbol: Name of variable to test for presense of in Factor ϕ.
+* ϕ::Factor: Factor to test if variable named <name> is present in.
+"""
 function in_scope(name, ϕ)
 
     return any(name == v.name for v in ϕ.vars)
