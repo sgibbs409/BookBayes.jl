@@ -76,7 +76,11 @@ function in_scope(name, ϕ)
 end
 
 
+"""
+    function condition(φ::Factor, name, value)
 
+Method for factor conditioning.  Take a factor **ϕ** and return a new factor whose table entries are consistent with the variable named **name** having value **value**.
+"""
 function condition(φ::Factor, name, value)
     if !in_scope(name, φ)
         return φ
@@ -91,6 +95,12 @@ function condition(φ::Factor, name, value)
     return Factor(vars, table)
 end
 
+
+"""
+    function condition(φ::Factor, evidence)
+
+Method for factor conditioning.  Take a factor **ϕ** and apply **evidence** in the form of a named tuple.
+"""
 function condition(φ::Factor, evidence)
     for (name, value) in pairs(evidence)
         φ = condition(φ, name, value)
