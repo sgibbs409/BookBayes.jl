@@ -199,7 +199,6 @@ julia> assignment = (x=1, y=2, z=1);
 julia> probability(bn, assignment)
 0.028800000000000006
 ```
-
 """
 function probability(bn::BayesianNetwork, assignment)
 
