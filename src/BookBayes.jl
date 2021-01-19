@@ -19,7 +19,9 @@ export
         namedtuple,
         assignments,
         normalize!,
-        FactorTable
+        FactorTable,
+        BayesianNetwork,
+        probability
 
 
 using Base.Iterators: product

@@ -5,7 +5,10 @@
 """
     const FactorTable = Dict{NamedTuple,Float64}
 
+Data structure representing a conditional probability distribution of a single variable given zero or more conditional variables.
 
+Keys: named tuples of variable names to values.
+Values: conditional probability
 """
 const FactorTable = Dict{NamedTuple,Float64}
 
@@ -93,6 +96,7 @@ same scalar so they sum to 1.
 """
 function normalize!(ϕ::Factor)
 
+    # total sum of probabilities in table
     z = sum(p for (a,p) in ϕ.table)
     for (a,p) in ϕ.table
         ϕ.table[a] = p/z
@@ -121,10 +125,60 @@ end
 """
     function probability(bn::BayesianNetwork, assignment)
 
+Calculate the probability of a given variable assignment given the bayesian network bn.
+
+# Arguments
+
+* bn: The BayesianNetwork describing the joint distribution
+* assignment: a NamedTuple of :Symbol=>Integer pairs giving the
+            categorical index value of each variable.
+
+# Examples
+```julia
+julia> X = Variable(:x, 2);
+
+julia> Y = Variable(:y, 2);
+
+julia> Z = Variable(:z, 2);
+
+julia> ϕx = Factor([X, Y, Z], FactorTable(
+           (x=1, y=1, z=1) => 0.08,
+           (x=1, y=1, z=2) => 0.31,
+           (x=1, y=2, z=1) => 0.09,
+           (x=1, y=2, z=2) => 0.37,
+           (x=2, y=1, z=1) => 0.01,
+           (x=2, y=1, z=2) => 0.05,
+           (x=2, y=2, z=1) => 0.02,
+           (x=2, y=2, z=2) => 0.07,
+       ));
+
+julia> ϕy = Factor([Y], FactorTable(
+           (y=1,) => 0.20,
+           (y=2,) => 0.80,
+       ));
+
+julia> ϕz = Factor([Z], FactorTable(
+           (z=1,) => 0.40,
+           (z=2,) => 0.60,
+       ));
+
+julia> g = SimpleDiGraph(3);
+
+julia> add_edge!(g,1,3);
+
+julia> add_edge!(g,2,3);
+
+julia> bn = BayesianNetwork([Y, Z, X], [ϕy, ϕz, ϕ], g);
+
+julia> assignment = (x=1, y=2, z=1);
+
+julia> probability(bn, assignment)
+0.028800000000000006
+```
 
 """
 function probability(bn::BayesianNetwork, assignment)
-        select(ϕ) = select(assignment, variablenames(ϕ))
-        probability(ϕ) = ϕ.table[select(ϕ)]
-        return prod(probability(ϕ) for ϕ in bn.factors)
-    end
+    select(ϕ) = NamedTupleTools.select(assignment, variablenames(ϕ))
+    probability(ϕ) = ϕ.table[select(ϕ)]
+    return prod(probability(ϕ) for ϕ in bn.factors)
+end
