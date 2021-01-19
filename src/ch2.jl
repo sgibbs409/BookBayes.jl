@@ -2,25 +2,28 @@
 
 
 
+
+
 """
     const FactorTable = Dict{NamedTuple,Float64}
 
-Data structure representing a conditional probability distribution of a single variable given zero or more conditional variables.
-
-Keys: named tuples of variable names to values.
-Values: conditional probability
+Type alias of a Dictionary mapping tuples of Variable name=>value assignments to probabilities.
 """
 const FactorTable = Dict{NamedTuple,Float64}
 
 
-
 """
     struct Variable
-        name::Symbol
-        m::Int # number of possible values
-    end
 
-Data structure representing a single node in a discrete bayesian network
+A Type representing a single discrete variable.
+
+Params:
+
+    name::Symbol
+name of Variable
+
+    m::Int:
+number of possible (discrete) values this Variable can take
 """
 struct Variable
     name::Symbol
@@ -29,13 +32,20 @@ end
 
 
 
+
+
 """
     struct Factor
-        vars::Vector{Variable}
-        table::FactorTable
-    end
 
-Data structure representing a discrete conditional probability distribution
+A Type representing a joint or conditional probability distribution over the variables in vars.
+
+Fields:
+
+    vars:
+The variables represented by this distribution
+
+    table:
+Probability table mapping Variable assignments (NamedTuple) => probability (Float64)
 """
 struct Factor
     vars::Vector{Variable}
@@ -43,65 +53,57 @@ struct Factor
 end
 
 
-"""
-    variablenames(ϕ::Factor) = [var.name for var in ϕ.vars]
 
-Get Vector of the variable names of all variables in ϕ
-"""
-variablenames(ϕ::Factor) = [var.name for var in ϕ.vars]
 
 
 
 """
-    function namedtuple(n::Array{Symbol,1}, v::Tuple)
+    function variablenames(φ::Factor)
 
-Create a NamedTuple of pairs of ::Symbol => ::Any
-
-### ARGS
-
-- n:  Array of Symbols giving names of assignment variables
-- v:  Tuple of values, one per name Symbol
+Get a vector of variable names (Symbols) for the Variables in a Factor
 """
-function namedtuple(n::Array{Symbol,1}, v::Tuple)
-    return NamedTuple{Tuple(n)}(v)
-end
+variablenames(φ::Factor) = [var.name for var in φ.vars]
+
+
 
 
 
 """
     function assignments(vars::AbstractVector{Variable})
 
-Get a vector of every possible valid namedtuple corresponding to a possible valid (Integer (Categorical)) value assignment of the Variables in vars.
-
-### ARGS
-
-### EXAMPLES
-
-(:a => 3, :b => 1, :c => 7)
+Get an array of all possible variable=>value assignment tuples for Variables in vars.
 """
 function assignments(vars::AbstractVector{Variable})
+
+    # get a vector of variable names
     n = [var.name for var in vars]
-    #n = Tuple([var.name for var in vars])
-    #return [NamedTuple{n}(v) for v in product((1:v.m for v in vars)...)]
+
+    # product(1:v1.m, 1:v2.m, 1:v3.m) -> cartesian product of integer indicies
+    #                                 -> iterator over tuples of indicies
     return [namedtuple(n, v) for v in product((1:v.m for v in vars)...)]
 end
 
 
 
 
-"""
-    normalize!(ϕ::Factor)
-Normalize a factor ϕ, which divides all the entries in the factor by the
-same scalar so they sum to 1.
-"""
-function normalize!(ϕ::Factor)
 
-    # total sum of probabilities in table
-    z = sum(p for (a,p) in ϕ.table)
-    for (a,p) in ϕ.table
-        ϕ.table[a] = p/z
+
+"""
+    function normalize!(φ::Factor)
+
+Update φ::Factor so all values sum to 1.0 while maintaining relative value (so values represent probabilities).
+"""
+function normalize!(φ::Factor)
+
+    # sum all probabilities in Factor table
+    z = sum(p for (a,p) in φ.table)
+
+    # divide each value by total sum
+    for (a,p) in φ.table
+            φ.table[a] = p/z
     end
-    return ϕ
+
+    return φ
 end
 
 
@@ -109,18 +111,40 @@ end
 
 """
     struct BayesianNetwork
-        vars::Vector{Variable}
-        factors::Vector{Factor}
-        graph::SimpleDiGraph
-    end
 
-Data structure representing a discrete bayesian network.
+Represents a Bayesian Network.
+
+Fields:
+
+    vars::Vector{Variable}:
+Vector of Variables contained in network
+
+    factors::Vector{Factor}:
+Vector of Factors, one for each Variable in vars, representing conditional probability distribution over that variable given parents of var in network.
+
+    graph::SimpleDiGraph{Int64}:
+Represents the structure of the network variables and implicitly defines independence relationships.
+
 """
 struct BayesianNetwork
+
+    """Vector of every Variable in the network"""
     vars::Vector{Variable}
+
+    """
+        Network conditional independence specified by a `Vector` of `Factor`s.
+        Each Factor speifies the conditional joint PMF over its subset of variables, given the
+    """
     factors::Vector{Factor}
-    graph::SimpleDiGraph
+
+    """
+        DAG that specifies the independence relationships among variables.
+        Nodes
+    """
+    graph::SimpleDiGraph{Int64}
 end
+
+
 
 """
     function probability(bn::BayesianNetwork, assignment)
@@ -178,7 +202,14 @@ julia> probability(bn, assignment)
 
 """
 function probability(bn::BayesianNetwork, assignment)
-    select(ϕ) = NamedTupleTools.select(assignment, variablenames(ϕ))
-    probability(ϕ) = ϕ.table[select(ϕ)]
-    return prod(probability(ϕ) for ϕ in bn.factors)
+
+        # Function to map Factor to a NamedTuple containing only the name=>value pairs for names specified in the (conditionally independent) Factor φ and values for them (and all other variables in bn) specified in `assignment`
+        __select(φ) = select(assignment, variablenames(φ))
+
+        # Function mapping Factor to probability of factor assignment
+        probability(φ) = φ.table[__select(φ)]
+
+        # Final probability is product of individual factor's probabilities (since they are implicitly independent)
+        return prod(probability(φ) for φ in bn.factors)
+
 end
