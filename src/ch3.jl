@@ -461,7 +461,7 @@ end
 @doc raw"""
     function blanket(bn::BayesianNetwork, a, i)
 
-Calculate $P(X\_{i} | x\_{-i})$ from a Bayesian Network bn.
+Calculate $P(X\\_{i} | x\\_{-i})$ from a Bayesian Network bn.
 
 # Arguments
 
