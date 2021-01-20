@@ -93,17 +93,17 @@ end
 
 Update φ::Factor so all values sum to 1.0 while maintaining relative value (so values represent probabilities).
 """
-function normalize!(φ::Factor)
+function normalize!(ϕ::Factor)
 
     # sum all probabilities in Factor table
-    z = sum(p for (a,p) in φ.table)
+    z = sum(p for (a,p) in ϕ.table)
 
     # divide each value by total sum
-    for (a,p) in φ.table
-            φ.table[a] = p/z
+    for (a,p) in ϕ.table
+            ϕ.table[a] = p/z
     end
 
-    return φ
+    return ϕ
 end
 
 

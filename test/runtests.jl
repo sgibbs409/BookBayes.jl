@@ -6,7 +6,7 @@ using Test, BookBayes
 X = Variable(:x, 2);
 Y = Variable(:y, 2);
 Z = Variable(:z, 2);
-ϕx = Factor([X, Y, Z], FactorTable(
+ϕxyz = Factor([X, Y, Z], FactorTable(
     (x=1, y=1, z=1) => 0.08,
     (x=1, y=1, z=2) => 0.31,
     (x=1, y=2, z=1) => 0.09,
@@ -16,6 +16,22 @@ Z = Variable(:z, 2);
     (x=2, y=2, z=1) => 0.02,
     (x=2, y=2, z=2) => 0.07,
 ));
+
+ϕxz_m = marginalize(ϕxyz, :y)
+ϕx_m = marginalize(ϕxz_m, :z)
+ϕyz_m = marginalize(ϕxyz, :x)
+ϕy_m = marginalize(ϕyz_m, :z)
+ϕz_m = marginalize(ϕyz_m, :y)
+
+
+
+
+ϕyz = ϕy_m * ϕz_m
+
+ϕxz_y = condition(ϕxyz, :y, 2)
+normalize!(ϕxz_y)
+
+ψxz_y = infer(ExactInference(), )
 ϕy = Factor([Y], FactorTable(
     (y=1,) => 0.20,
     (y=2,) => 0.80,

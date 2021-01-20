@@ -1,5 +1,63 @@
 import Base.:*
 
+
+export LikelihoodWeightedSampling,
+        DirectSampling,
+        GibbsSampling,
+        ExactInference,
+        marginalize,
+        in_scope,
+        condition,
+        infer,
+        VariableElimination,
+        blanket,
+        update_gibbs_sample,
+        gibbs_sample
+
+
+"""
+    struct LikelihoodWeightedSampling
+        m # number of samples
+    end
+"""
+struct LikelihoodWeightedSampling
+    m # number of samples
+end
+
+"""
+    struct DirectSampling
+        m # number of samples
+    end
+"""
+struct DirectSampling
+    m # number of samples
+end
+
+"""
+    struct GibbsSampling
+        m_samples # number of samples to use
+        m_burnin # number of samples to discard during burn-in
+        m_skip # number of samples to skip for thinning
+        ordering # array of variable indices
+    end
+
+Data structure specifying parameters to use when Gibbs Sampling a BayesianNetwork
+"""
+struct GibbsSampling
+    m_samples # number of samples to use
+    m_burnin # number of samples to discard during burn-in
+    m_skip # number of samples to skip for thinning
+    ordering # array of variable indices
+end
+
+
+"""
+    struct ExactInference
+
+Singleton type to pass instances of as first arg of `infer` to trigger direct inference method.
+"""
+struct ExactInference end
+
 """
     function Base.:*(ϕ::Factor, ψ::Factor)
 
@@ -111,33 +169,28 @@ end
 
 
 
-"""
-    struct ExactInference
 
-Singleton type to pass instances of as first arg of `infer` to trigger direct inference method.
-"""
-struct ExactInference end
 
 """
     function infer(M::ExactInference, bn, query, evidence)
 
 Get a joint distribution over query variables, given evidence.  Uses direct inference.
 
-Fields:
+# Arguments
 
     M::ExactInference
 Singleton value to use this version of infer
 
-    bn
+    bn::BayesianNetwork
 BayesianNetwork specifying original distribution
 
-    query
+    query::Tuple
 Tuple of Symbols of Variable names to get joint distribution over.
 
-    evidence
+    evidence::NamedTuple
 Dictionary of Variable Symbol name => Variable value pairs specifying known values.
 """
-function infer(M::ExactInference, bn, query, evidence)
+function infer(M::ExactInference, bn::BayesianNetwork, query::Tuple, evidence::NamedTuple)
     # get joint distribution over all variables
     φ = prod(bn.factors)
 
@@ -178,13 +231,13 @@ Fields:
     M::VariableElimination
 Singleton value to dispatch this version of infer
 
-    bn
+    bn::BayesianNetwork
 BayesianNetwork specifying original distribution
 
-    query
+    query::Tuple{Symbol}
 Tuple of Symbols of Variable names to get joint distribution over.
 
-    evidence
+    evidence::NamedTuple
 Dictionary of Variable Symbol name => Variable value pairs specifying known values.
 """
 function infer(M::VariableElimination, bn, query, evidence)
@@ -281,9 +334,6 @@ function Base.rand(bn::BayesianNetwork)
 end
 
 
-struct DirectSampling
-    m # number of samples
-end
 
 
 """
@@ -291,19 +341,23 @@ end
 
 Get a joint distribution over query variables, given evidence.  Uses the direct sampling inference method to draw m samples from network consistent with evidence.
 
-Fields:
+### Returns
 
-    M::DirectSampling
-Singleton value to dispatch this version of infer
+Returns estimated joint distribution over query variables conditioned on evidence variable assignment.
 
-    bn
-BayesianNetwork specifying original distribution
+# Arguments
 
-    query
-Tuple of Symbols of Variable names to get joint distribution over.
+* M::DirectSampling
+  Singleton value to dispatch this version of infer
 
-    evidence
-Dictionary of Variable Symbol name => Variable value pairs specifying known values.
+* bn
+  BayesianNetwork specifying original distribution
+
+* query
+  Tuple of Symbols of Variable names to get joint distribution over.
+
+* evidence
+  Dictionary of Variable Symbol name => Variable value pairs specifying known values.
 """
 function infer(M::DirectSampling, bn, query, evidence)
     table = FactorTable()
@@ -331,62 +385,138 @@ function infer(M::DirectSampling, bn, query, evidence)
 end
 
 
-struct LikelihoodWeightedSampling
-    m # number of samples
-end
 
 
+
+"""
+    function infer(M::LikelihoodWeightedSampling, bn, query, evidence)
+
+Get a joint distribution over query variables, given evidence.  Uses the Likelihood Weighted Sampling inference method to draw m samples from network consistent with evidence.
+
+### Returns
+
+Returns estimated joint distribution over query variables conditioned on evidence variable assignment.
+
+# Arguments
+
+* M::LikelihoodWeightedSampling
+  Singleton value to dispatch this version of infer
+
+* bn
+  BayesianNetwork specifying original distribution
+
+* query
+  Tuple of Symbols of Variable names to get joint distribution over.
+
+* evidence
+  Dictionary of Variable Symbol name => Variable value pairs specifying known values.
+"""
 function infer(M::LikelihoodWeightedSampling, bn, query, evidence)
     table = FactorTable()
     ordering = topological_sort_by_dfs(bn.graph)
 
+    # Take M.m samples
     for i in 1:(M.m)
-
+        #initial assignment, weight
         a, w = NamedTuple(), 1.0
 
+        # for each variable in network
         for j in ordering
 
+            # name and factor of current variable
             name, φ = bn.vars[j].name, bn.factors[j]
 
+            # if this variable is one of the evidence variables
             if haskey(evidence, name)
+                # automatically add (name=>evidence_value_of_name) to this sample
                 a = merge(a, namedtuple(name)(evidence[name]))
+
+                # but the weight of this sample is downgraded by probability of evidence given corresponding assignment values already determined.
                 w *= φ.table[select(a, variablenames(φ))]
             else
+                # Not an evidence variable.  Randomly sample this factor, given prior determined values.
                 val = rand(condition(φ, a))[name]
+                # and add to this sample assignment
                 a = merge(a, namedtuple(name)(val))
             end
         end
+        #  a is now a complete assignment (all variables in bn assigned a value)
 
+        # extract the query variable portion of assignment
         b = select(a, query)
-        table[b] = get(table, b, 0) + w
-    end
 
+        # add weight of this sample to corresponding entry in factor table
+        table[b] = get(table, b, 0) + w
+
+    end # end of sampling loop
+
+    # variable list of query variables
     vars = filter(v->v.name ∈ query, bn.vars)
+
+    # return new Factor over query variables
     return normalize!(Factor(vars, table))
 end
 
 
+@doc raw"""
+    function blanket(bn::BayesianNetwork, a, i)
 
+Calculate $P(X\_{i} | x\_{-i})$ from a Bayesian Network bn.
 
+# Arguments
 
+* bn:: BayesianNetwork
 
-
-
+* a::NamedTuple:
+  Complete assignment of values to every variable in bn.
+* i::Integer
+  Index of leave-one-out variable Xᵢ in network (according to some valid topological sort)
+"""
 function blanket(bn, a, i)
+    # name of ith variable
     name = bn.vars[i].name
+    # val of ith variable
     val = a[name]
+    # remove variable i from assignment a
     a = delete(a, name)
+
+    # get factors that contain variable i
     Φ = filter(φ -> in_scope(name, φ), bn.factors)
+    #
     φ = prod(condition(φ, a) for φ in Φ)
     return normalize!(φ)
 end
 
 
+@doc raw"""
+    function update_gibbs_sample(a, bn, evidence, ordering)
+
+Single Gibbs Sampling sample loop.  Starting from complete assignment a of values to all variable in bn, sample each distribution $P(X\\_{i} | x\\_{-i})$ one at a time, replacing its entry in a with sampled value after each iteration.
+
+# Arguments
+* a::NamedTuple
+
+* bn::BayesianNetwork
+
+* evidence::NamedTuple
+
+* ordering::Vector{Integer}:
+  Vector of indices of each variable in bayesian network according to valid topological sort.
+
+# Returns
+
+Returns NamedTuple assignment updated with new sampled values
+"""
 function update_gibbs_sample(a, bn, evidence, ordering)
+    # for each variable in bn according to topological sort
     for i in ordering
+        # name of current variable
         name = bn.vars[i].name
+        # If this variable is not an evidence variable
         if !haskey(evidence, name)
+            # Calculate marginal distribution of variable i given assignment a
             b = blanket(bn, a, i)
+            # sample marginal distribuion of i and update a with it.
             a = merge(a, namedtuple(name)(rand(b)[name]))
         end
     end
@@ -394,38 +524,57 @@ function update_gibbs_sample(a, bn, evidence, ordering)
 end
 
 
+"""
+    function gibbs_sample(a, bn, evidence, ordering, m)
+
+Sample BayesianNetwork bn using Gibbs Sampling.  Start from NamedTuple assignment a, given evidence, with ordering giving valid topological sort to follow, and take m samples.
+
+# Returns
+
+Returns a new NamedTuple assignment approximately randomly sampled from bn given evidence.
+"""
 function gibbs_sample(a, bn, evidence, ordering, m)
+    # Sample distribution m times, starting from a
     for j in 1:m
+        # replace a with result of previous iteration
         a = update_gibbs_sample(a, bn, evidence, ordering)
     end
     return a
 end
 
-struct GibbsSampling
-    m_samples # number of samples to use
-    m_burnin # number of samples to discard during burn-in
-    m_skip # number of samples to skip for thinning
-    ordering # array of variable indices
-end
 
+
+
+"""
+    function infer(M::GibbsSampling, bn, query, evidence)
+
+Estimate the conditional distribution over the query variables given the evidence values, using Gibbs Sampling
+"""
 function infer(M::GibbsSampling, bn, query, evidence)
+    # New FactorTable to hold return Factor probabilities
     table = FactorTable()
+
+    # Randomly sample bn (using direct sampling), and replace evidence vars with given evidence values.
     a = merge(rand(bn), evidence)
+
+    # Gibbs Sample bn M.m_burnin times to initialize starting point
     a = gibbs_sample(a, bn, evidence, M.ordering, M.m_burnin)
 
+    # Sample bn M.m_samples times
     for i in 1:(M.m_samples)
+        # Keep every M.m_skipᵗʰ sample only
         a = gibbs_sample(a, bn, evidence, M.ordering, M.m_skip)
+        # extract query variable values from sample
         b = select(a, query)
+        # increment the sampled query value counter
         table[b] = get(table, b, 0) + 1
     end
 
+    # Extract the query Variables from bn
     vars = filter(v->v.name ∈ query, bn.vars)
+    # Return estimated query variable distribution
     return normalize!(Factor(vars, table))
 end
-
-
-
-
 
 
 
