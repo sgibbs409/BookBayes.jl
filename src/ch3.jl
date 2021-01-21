@@ -142,8 +142,10 @@ Method for factor conditioning.  Take a factor **ϕ** and return a new factor wh
 function condition(φ::Factor, name, value)
     if !in_scope(name, φ)
         return φ
-    end
+    end # assert: variable <name> ∈ φ
     table = FactorTable()
+
+
     for (a, p) in φ.table
         if a[name] == value
             table[delete(a, name)] = p

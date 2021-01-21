@@ -21,23 +21,14 @@ export
         normalize!,
         FactorTable,
         BayesianNetwork,
-        probability,
-        marginalize,
-        in_scope,
-        condition,
-        ExactInference,
-        infer,
-        VariableElimination,
-        DirectSampling,
-        blanket,
-        update_gibbs_sample,
-        gibbs_sample,
-        GibbsSampling
+        probability
+
 
 
 using Base.Iterators: product
 
 include("ch2.jl")
 include("ch3.jl")
+include("ch4.jl")
 
 end # module
