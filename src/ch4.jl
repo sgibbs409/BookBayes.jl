@@ -29,6 +29,11 @@ end
 """
     function statistics(vars, G, D::Matrix{Int})
 
+Extract the statistics (ie counts) from a discrete dataset D assuming a Bayesian network with variables vars and structure G.  The dataset is an _n x m_ matrix, where n is the number of variables, and m is the number of data points.
+
+# Returns
+
+Returns an array *M* of length _n_.  The _i_th component consists of a _qᵢ x rᵢ_ matrix of counts.
 """
 function statistics(vars, G, D::Matrix{Int})
     n = size(D, 1)
