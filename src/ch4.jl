@@ -1,5 +1,6 @@
 
 
+using LinearAlgebra
 
 export sub2ind,
         statistics,
@@ -36,19 +37,32 @@ Extract the statistics (ie counts) from a discrete dataset D assuming a Bayesian
 Returns an array *M* of length _n_.  The _i_th component consists of a _qᵢ x rᵢ_ matrix of counts.
 """
 function statistics(vars, G, D::Matrix{Int})
+    # n::number of variables
     n = size(D, 1)
+    # rᵢ::for each variable i, number of discrete values it can take
     r = [vars[i].m for i in 1:n]
+
+    # qᵢ: number of unique value combinations variable i's direct parents can take
     q = [prod([r[j] for j in inneighbors(G,i)]) for i in 1:n]
+
+    # initialize counts matrix
     M = [zeros(q[i], r[i]) for i in 1:n]
 
+    # for each data point (one per column of D)
     for o in eachcol(D)
+        # for each variable in each sample
         for i in 1:n
+            # actual category observed in this data point
             k = o[i]
+            # parents of variable i
             parents = inneighbors(G,i)
             j=1
+
+            # Find linear index of parents
             if !isempty(parents)
                 j = sub2ind(r[parents], o[parents])
             end
+            #increment mᵢⱼₖ
             M[i][j,k] += 1.0
         end
     end
