@@ -31,4 +31,10 @@ include("ch2.jl")
 include("ch3.jl")
 include("ch4.jl")
 
+"""
+    const DAG = SimpleDiGraph
+
+Data structure representing a directed acyclic graph
+"""
+const DAG = SimpleDiGraph
 end # module
