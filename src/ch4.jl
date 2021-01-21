@@ -11,6 +11,15 @@ export sub2ind,
 """
     function sub2ind(siz, x)
 
+Convert a length n cartesian coordinate for indexing an n dimensional array into its linear (scalar) equivalent.
+
+# Arguments
+
+* siz::NTuple{Int}
+  * Result of calling size(A) on the matrix of interest A.
+
+* x::NTuple{Int}
+  * length(siz)-length cartesian index to convert from
 """
 function sub2ind(siz, x)
     k = vcat(1, cumprod(siz[1:end-1]))
@@ -28,8 +37,10 @@ function statistics(vars, G, D::Matrix{Int})
     M = [zeros(q[i], r[i]) for i in 1:n]
 
     for o in eachcol(D)
-        for i in 1:n k = o[i]
-            parents = inneighbors(G,i) j=1
+        for i in 1:n
+            k = o[i]
+            parents = inneighbors(G,i)
+            j=1
             if !isempty(parents)
                 j = sub2ind(r[parents], o[parents])
             end
