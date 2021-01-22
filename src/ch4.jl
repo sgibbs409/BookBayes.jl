@@ -1,6 +1,5 @@
 
 
-using LinearAlgebra
 
 export sub2ind,
         statistics,
@@ -73,6 +72,14 @@ end
 """
     function prior(vars, G)
 
+Generate a matrix of Dirichlet priors {αᵢⱼₖ = 1 ∀ i, j, k} corresponding to a uniform prior distribution over the parameters of a bayesian network.
+
+# Arguments
+
+    * vars::Vector{Variables}
+        The Variables of the discrete BayesianNetwork
+    * G::DAG
+        The bayesian directed acyclic graph structure
 """
 function prior(vars, G)
 
@@ -89,11 +96,13 @@ end
 """
     gaussian_kernel(b)
 
+Get a scalar probability density function of a zero-mean, b standard deviation gaussian.
 """
 gaussian_kernel(b) = x->pdf(Normal(0,b), x)
 
 """
     function kernel_density_estimate(φ, O)
+
 
 """
 function kernel_density_estimate(φ, O)

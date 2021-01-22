@@ -15,6 +15,6 @@ D = [1 2 2 1; 1 2 2 1; 2 2 2 2];
 
 M = statistics(vars, G, D)
 
-
+# Compute the maximum likelihood estimate by normalizing the rows in the matricies in M:
 θ = [mapslices(x->LinearAlgebra.normalize(x,1), Mi, dims=2)
         for Mi in M]

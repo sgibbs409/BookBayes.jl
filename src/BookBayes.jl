@@ -11,6 +11,8 @@ using NamedTupleTools
 using LightGraphs
 using IterTools
 using Distributions
+using SpecialFunctions
+using LinearAlgebra
 
 export
         Variable,
@@ -27,14 +29,17 @@ export
 
 using Base.Iterators: product
 
-include("ch2.jl")
-include("ch3.jl")
-include("ch4.jl")
-
 """
     const DAG = SimpleDiGraph
 
 Data structure representing a directed acyclic graph
 """
 const DAG = SimpleDiGraph
+
+include("ch2.jl")
+include("ch3.jl")
+include("ch4.jl")
+include("ch5.jl")
+
+
 end # module
