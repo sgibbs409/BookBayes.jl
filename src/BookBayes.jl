@@ -40,6 +40,6 @@ include("ch2.jl")
 include("ch3.jl")
 include("ch4.jl")
 include("ch5.jl")
-
+include("ch6.jl")
 
 end # module
