@@ -35,14 +35,14 @@ Extract the statistics (ie counts) from a discrete dataset D assuming a Bayesian
 
 Returns an array *M* of length _n_.  The _i_th component consists of a _qᵢ x rᵢ_ matrix of counts.
 """
-function statistics(vars, G, D::Matrix{Int})
+function statistics(vars, G, D)
     # n::number of variables
     n = size(D, 1)
     # rᵢ::for each variable i, number of discrete values it can take
     r = [vars[i].m for i in 1:n]
 
     # qᵢ: number of unique value combinations variable i's direct parents can take
-    q = [prod([r[j] for j in inneighbors(G,i)]) for i in 1:n]
+    q = [ prod(Int64[r[j] for j in inneighbors(G,i)]) for i in 1:n ]
 
     # initialize counts matrix
     M = [zeros(q[i], r[i]) for i in 1:n]

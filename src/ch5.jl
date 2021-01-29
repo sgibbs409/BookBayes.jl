@@ -81,7 +81,7 @@ Find a semi-optimal graph structure over the Variables `vars` using the K2 Searc
         Parameters to contol fit operation
     * vars::Vector{Variables}
     * D::Matrix{Integer}
-        Data array of size n x m, where n == length(vars) and m == number of data points.
+        Data array of size n x m, where n == length(vars) (ie number of Variables) and m == number of data points.
 """
 function fit(method::K2Search, vars, D)
 
@@ -126,12 +126,15 @@ end
 
 """
     struct LocalDirectedGraphSearch
+        G::DAG          # initial graph
+        k_max::Integer  # number of iterations
+    end
 
-Data structure with parameters to inform graph fit operation
+Data structure with parameters to inform graph fit operation.
 """
 struct LocalDirectedGraphSearch
-    G::DAG # initial graph
-    k_max::Integer # number of iterations
+    G::DAG          # initial graph
+    k_max::Integer  # number of iterations
 end
 
 """
