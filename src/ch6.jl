@@ -1,4 +1,9 @@
 
+
+export SimpleProblem,
+        solve,
+        value_of_information
+
 """
     struct SimpleProblem
         bn::BayesianNetwork
