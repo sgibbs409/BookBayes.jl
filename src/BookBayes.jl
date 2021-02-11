@@ -14,7 +14,7 @@ using Distributions
 using SpecialFunctions
 using LinearAlgebra
 using JuMP
-using GPLK
+using GLPK
 
 export
         Variable,
