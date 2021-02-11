@@ -13,6 +13,8 @@ using IterTools
 using Distributions
 using SpecialFunctions
 using LinearAlgebra
+using JuMP
+using GPLK
 
 export
         Variable,
@@ -41,5 +43,6 @@ include("ch3.jl")
 include("ch4.jl")
 include("ch5.jl")
 include("ch6.jl")
+include("ch7_Exact_Solution_Methods.jl")
 
 end # module
