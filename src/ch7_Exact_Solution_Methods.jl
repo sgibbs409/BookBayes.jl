@@ -1,6 +1,23 @@
 
 
 
+
+export MDF,
+        lookahead,
+        iterative_policy_evaluation,
+        policy_evaluation,
+        ValueFunctionPolicy,
+        greedy,
+        PolicyIteration,
+        solve,
+        backup,
+        ValueIteration,
+        GaussSeidelValueIteration,
+        LinearProgramFormulation,
+        tensorform,
+        LinearQuadraticProblem
+
+
 """
     struct MDP
         γ # discount factor
@@ -244,10 +261,90 @@ function solve(M::GaussSeidelValueIteration, 𝒫::MDP)
     𝒮, 𝒜, T, R, γ = 𝒫.𝒮, 𝒫.𝒜, 𝒫.T, 𝒫.R, 𝒫.γ
     U = [0.0 for s in 𝒮]
     for k = 1:M.k_max
-        for (s, i) in enumerate(𝒮)
+        for (i, s) in enumerate(𝒮)
             u = backup(𝒫, U, s)
             U[i] = u
         end
     end
     return ValueFunctionPolicy(𝒫, U)
+end
+
+
+# ------------- Linear Programming --------------
+
+"""
+    struct LinearProgramFormulation end
+"""
+struct LinearProgramFormulation end
+
+"""
+    function tensorform(𝒫::MDP)
+
+Convert an MDP into its tensor form, where the states and actions consist of integer indicies, the reward function is a matrix, and the transition function is a three-dimensional tensor.
+"""
+function tensorform(𝒫::MDP)
+    𝒮, 𝒜, R, T = 𝒫.𝒮, 𝒫.𝒜, 𝒫.R, 𝒫.T
+    𝒮′ = eachindex(𝒮)
+    𝒜′ = eachindex(𝒜)
+    R′ = [R(s,a) for s in 𝒮, a in 𝒜]
+    T′ = [T(s,a,s′) for s in 𝒮, a in 𝒜, s′ in 𝒮]
+    return 𝒮′, 𝒜′, R′, T′
+end
+
+
+"""
+    solve(𝒫::MDP) = solve(LinearProgramFormulation(), 𝒫)
+
+Default MDP solver is the LinearProgramFormulation solver.
+"""
+solve(𝒫::MDP) = solve(LinearProgramFormulation(), 𝒫)
+
+
+"""
+    function solve(M::LinearProgramFormulation, 𝒫::MDP)
+"""
+function solve(M::LinearProgramFormulation, 𝒫::MDP)
+    𝒮, 𝒜, R, T = tensorform(𝒫)
+    model = Model(GLPK.Optimizer)
+    @variable(model, U[𝒮])
+    @objective(model, Min, sum(U))
+    @constraint(model, [s=𝒮,a=𝒜], U[s] ≥ R[s,a] + 𝒫.γ*T[s,a,:]⋅U)
+    optimize!(model)
+    return ValueFunctionPolicy(𝒫, value.(U))
+end
+
+
+# ---------- Linear Quadratic Problem -----------
+
+
+"""
+    struct LinearQuadraticProblem
+        Ts # transition matrix with respect to state
+        Ta # transition matrix with respect to action
+        Rs # reward matrix with respect to state (negative semidefinite)
+        Ra # reward matrix with respect to action (negative definite)
+        h_max # horizon
+    end
+"""
+struct LinearQuadraticProblem
+    Ts # transition matrix with respect to state
+    Ta # transition matrix with respect to action
+    Rs # reward matrix with respect to state (negative semidefinite)
+    Ra # reward matrix with respect to action (negative definite)
+    h_max # horizon
+end
+
+"""
+    function solve(𝒫::LinearQuadraticProblem)
+"""
+function solve(𝒫::LinearQuadraticProblem)
+    Ts, Ta, Rs, Ra, h_max = 𝒫.Ts, 𝒫.Ta, 𝒫.Rs, 𝒫.Ra, 𝒫.h_max
+    V = zeros(size(Rs))
+    πs = Any[s -> zeros(size(Ta, 2))]
+    for h in 2:h_max
+        V = Ts'*(V - V*Ta*((Ta'*V*Ta + Ra) \ Ta'*V))*Ts + Rs
+        L = -(Ta'*V*Ta + Ra) \ Ta' * V * Ts
+        push!(πs, s -> L*s)
+    end
+    return πs
 end
