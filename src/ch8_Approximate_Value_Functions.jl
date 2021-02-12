@@ -196,7 +196,8 @@ function (Uθ::SimplexValueFunction)(s)
     p = sortperm(s′) # increasing order
     w_tot = 0.0
     for j in p
-        w = s′[j] - w_tot u += w*Uθ.θ[i...]
+        w = s′[j] - w_tot
+        u += w*Uθ.θ[i...]
         i[j] -= 1
         w_tot += w
     end
