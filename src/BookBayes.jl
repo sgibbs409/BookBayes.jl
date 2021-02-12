@@ -44,5 +44,6 @@ include("ch4.jl")
 include("ch5.jl")
 include("ch6.jl")
 include("ch7_Exact_Solution_Methods.jl")
+include("ch8_Approximate_Value_Functions.jl")
 
 end # module

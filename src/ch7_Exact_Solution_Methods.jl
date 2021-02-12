@@ -2,7 +2,7 @@
 
 
 
-export MDF,
+export  MDF,
         lookahead,
         iterative_policy_evaluation,
         policy_evaluation,
@@ -134,7 +134,7 @@ function (π::ValueFunctionPolicy)(s)
 end
 
 
-# Policy Iteration
+# ---------------- Policy Iteration ----------------
 
 """
     struct PolicyIteration
