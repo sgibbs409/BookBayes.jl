@@ -9,8 +9,8 @@ export  MonteCarloPolicyEvaluation,
         optimize_dist,
         EvolutionStrategies,
         evolution_strategy_weights,
-        IsotropicEvolutionStrategies,
-        
+        IsotropicEvolutionStrategies
+
 
 # --------------------------- POLICY SEARCH ---------------------------
 
