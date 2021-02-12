@@ -1,4 +1,11 @@
 
+# ------------------- Ch. 9: Online Planning --------------------
+
+# Reachable state space usually much smaller than than full state space.
+#
+# Algorithms to compute approximately optimal policies starting
+#   from the current state.
+
 
 export  RolloutLookahead,
         randstep,
@@ -18,17 +25,33 @@ export  RolloutLookahead,
         expand,
         label!
 
+
+
+
 # -------- Rollout with Lookahead ---------
+
+"""
+    struct RolloutLookahead
+        𝒫 # problem
+        π # rollout policy
+        d # depth
+    end
+"""
 struct RolloutLookahead
     𝒫 # problem
     π # rollout policy
     d # depth
 end
 
+"""
+    randstep(𝒫::MDP, s, a) = 𝒫.TR(s, a)
+"""
 randstep(𝒫::MDP, s, a) = 𝒫.TR(s, a)
 
 """
     function rollout(𝒫, s, π, d)
+
+Complexity: O(m × |𝒜| × d)
 """
 function rollout(𝒫, s, π, d)
     if d ≤ 0
@@ -38,6 +61,7 @@ function rollout(𝒫, s, π, d)
     s′, r = randstep(𝒫, s, a)
     return r + 𝒫.γ*rollout(𝒫, s′, π, d-1)
 end
+
 
 """
     function (π::RolloutLookahead)(s)
@@ -101,6 +125,7 @@ struct BranchAndBound
     Qhi # upper bound on action value function
 end
 
+
 """
     function branch_and_bound(𝒫, s, d, Ulo, Qhi)
 """
@@ -126,6 +151,8 @@ end
 (π::BranchAndBound)(s) = branch_and_bound(π.𝒫, s, π.d, π.Ulo, π.Qhi).a
 
 
+
+
 # --------- Sparse Sampling ---------
 
 """
@@ -142,6 +169,7 @@ struct SparseSampling
     m # number of samples
     U # value function at depth d
 end
+
 
 """
     function sparse_sampling(𝒫, s, d, m, U)
@@ -172,6 +200,8 @@ end
 (π::SparseSampling)(s) = sparse_sampling(π.𝒫, s, π.d, π.m, π.U).a
 
 
+
+
 # --------- Monte Carlo Tree Search ---------
 
 """
@@ -194,6 +224,7 @@ struct MonteCarloTreeSearch
     c # exploration constant
     π # rollout policy
 end
+
 
 """
     function (π::MonteCarloTreeSearch)(s)
@@ -234,6 +265,7 @@ function simulate!(π::MonteCarloTreeSearch, s, d=π.d)
     return q
 end
 
+
 """
     bonus(Nsa, Ns)
 """
@@ -255,12 +287,21 @@ end
 
 # --------- Heuristic Search ---------
 
+"""
+    struct HeuristicSearch
+        𝒫 # problem
+        Uhi # upper bound on value function
+        d # depth
+        m # number of simulations
+    end
+"""
 struct HeuristicSearch
     𝒫 # problem
     Uhi # upper bound on value function
     d # depth
     m # number of simulations
 end
+
 
 """
     function simulate!(π::HeuristicSearch, U, s)
@@ -273,6 +314,7 @@ function simulate!(π::HeuristicSearch, U, s)
         s = rand(𝒫.T(s, a))
     end
 end
+
 
 """
     function (π::HeuristicSearch)(s)
@@ -303,6 +345,7 @@ struct LabeledHeuristicSearch
     δ # gap threshold
 end
 
+
 """
     function (π::LabeledHeuristicSearch)(s)
 """
@@ -313,6 +356,7 @@ function (π::LabeledHeuristicSearch)(s)
     end
     return greedy(π.𝒫, U, s).a
 end
+
 
 """
     function simulate!(π::LabeledHeuristicSearch, U, solved, s)
@@ -336,6 +380,7 @@ function simulate!(π::LabeledHeuristicSearch, U, solved, s)
         end
     end
 end
+
 
 """
     function expand(π::LabeledHeuristicSearch, U, solved, s)
@@ -362,6 +407,7 @@ function expand(π::LabeledHeuristicSearch, U, solved, s)
 
     return (found, envelope)
 end
+
 
 """
     function label!(π::LabeledHeuristicSearch, U, solved, s)
