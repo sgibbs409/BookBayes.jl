@@ -35,17 +35,31 @@ struct MonteCarloPolicyEvaluation
     m # number of samples
 end
 
-"""
+@doc raw"""
     function (U::MonteCarloPolicyEvaluation)(π)
+
+Return the mean discounted reward of m random trajectories, each calculated by first sampling the initial state distribution, and then executing rollout from that state, using policy π.
+
+$U(\pi) \approx \frac{1}{m} \sum_{i=1}^{m}R(\tau\^{(i)})$
+
+Returns: Ũ(π)
+
+Complexity: 𝒪(m × d)
 """
 function (U::MonteCarloPolicyEvaluation)(π)
-    R(π) = rollout(U.𝒫, rand(U.b), π, U.d)
+    R(π) = rollout(U.𝒫, rand(U.b), π, U.d) # 𝒪(d)
     return mean(R(π) for i = 1:U.m)
 end
 
 
 """
     (U::MonteCarloPolicyEvaluation)(π, θ) = U(s->π(θ, s))
+
+Parameterized version where policy adjusted by parameter vector `θ`.
+
+Returns: Ũ(π₍θ₎)
+
+Complexity: 𝒪(m × d)
 """
 (U::MonteCarloPolicyEvaluation)(π, θ) = U(s->π(θ, s))
 
