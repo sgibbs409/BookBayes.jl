@@ -51,7 +51,7 @@ randstep(𝒫::MDP, s, a) = 𝒫.TR(s, a)
 """
     function rollout(𝒫, s, π, d)
 
-Complexity: O(m × |𝒜| × d)
+Complexity: 𝒪(d)
 """
 function rollout(𝒫, s, π, d)
     if d ≤ 0
@@ -65,6 +65,12 @@ end
 
 """
     function (π::RolloutLookahead)(s)
+
+Policy function: similar to ValueFunctionPolicy but using a single call to rollout for value function.
+
+Complexity: O(|𝒜|×|𝒮| × d)
+
+Consider variation that uses average of m rollouts to calculate U(s) (vs just 1 with this version).
 """
 function (π::RolloutLookahead)(s)
     U(s) = rollout(π.𝒫, s, π.π, π.d)
@@ -88,6 +94,10 @@ end
 
 """
     function forward_search(𝒫, s, d, U)
+
+Determine optimal action (and its value) to take from state `s` by expanding all possible transitions up to a depth `d` using depth-first search. `U(s)` used to evaluate the terminal (depth 0) value function.
+
+Complexity: 𝒪( (|𝒜|×|𝒮|)ᵈ )
 """
 function forward_search(𝒫, s, d, U)
     if d ≤ 0
@@ -173,6 +183,8 @@ end
 
 """
     function sparse_sampling(𝒫, s, d, m, U)
+
+Complexity: 𝒪( (|𝒜| × m)ᵈ )
 """
 function sparse_sampling(𝒫, s, d, m, U)
     if d ≤ 0
@@ -186,7 +198,7 @@ function sparse_sampling(𝒫, s, d, m, U)
         for i in 1:m
             s′, r = randstep(𝒫, s, a)
             a′, u′ = sparse_sampling(𝒫, s′, d-1, m, U)
-            u += (r + 𝒫.γ*u′) / m
+            u += (r + 𝒫.γ*u′) / m  # update mean
         end
 
         if u > best.u
@@ -228,17 +240,27 @@ end
 
 """
     function (π::MonteCarloTreeSearch)(s)
+
+Estimate optimal next action by first simulating m random trajectories.  Each simulation improves estimated action-value function.  The returned action is the optimal action over the estimated action-value function from the given state `s`.
+
+Complexity: 𝒪(|𝒜| × d × m)
 """
 function (π::MonteCarloTreeSearch)(s)
+    # simulate m times (m trajectories)
     for k in 1:π.m
         simulate!(π, s)
     end
+    # Return action with highest action-value
     return _argmax(a->π.Q[(s,a)], π.𝒫.𝒜)
 end
 
 
 """
     function simulate!(π::MonteCarloTreeSearch, s, d=π.d)
+
+Execute exploration-bonus policy for 1 random trajectory, updating system  counters, and return sample trajectory's value.
+
+Complexity: `𝒪(|𝒜| × d)`
 """
 function simulate!(π::MonteCarloTreeSearch, s, d=π.d)
     if d ≤ 0
@@ -248,18 +270,25 @@ function simulate!(π::MonteCarloTreeSearch, s, d=π.d)
     𝒫, N, Q, c = π.𝒫, π.N, π.Q, π.c
     𝒜, TR, γ = 𝒫.𝒜, 𝒫.TR, 𝒫.γ
 
+    # if never visited state s, init visit count and action-value estimate.
     if !haskey(N, (s, first(𝒜)))
         for a in 𝒜
             N[(s,a)] = 0
             Q[(s,a)] = 0.0
         end
+        # first time to state s: return sample trajectory value as utility est.
         return rollout(𝒫, s, π.π, d)
     end
 
-    a = explore(π, s)
+    # find next action to try
+    a = explore(π, s) # 𝒪(|𝒜|)
+    # simulate 1 step
     s′, r = TR(s,a)
+    # recurse remaining stochastic trajectory
     q = r + γ*simulate!(π, s′, d-1)
+    # update visit count
     N[(s,a)] += 1
+    # update running average of action-value
     Q[(s,a)] += (q-Q[(s,a)])/N[(s,a)]
 
     return q
@@ -268,12 +297,19 @@ end
 
 """
     bonus(Nsa, Ns)
+
+Monte Carlo exploration bonus term helper function.
+
+Complexity: 𝒪(1)
 """
 bonus(Nsa, Ns) = Nsa == 0 ? Inf : sqrt(log(Ns)/Nsa)
 
 
 """
     function explore(π::MonteCarloTreeSearch, s)
+
+Use monte carlo exploration heuristic to find next action to simulate.  Balances need to explore state-action space with
+Complexity: 𝒪(|𝒜|)
 """
 function explore(π::MonteCarloTreeSearch, s)
 
@@ -287,6 +323,7 @@ end
 
 # --------- Heuristic Search ---------
 
+# Use m simulations of a greedy policy with respect to value function U from state s.  U is initialized to an upperbound Ū (referred to as a heuristic).  Updates U with each lookahead step during simulation.  After simulations and value function estimate U improvement, return greedy action.
 """
     struct HeuristicSearch
         𝒫 # problem
@@ -305,11 +342,15 @@ end
 
 """
     function simulate!(π::HeuristicSearch, U, s)
+
+Simulate depth-d trajectory following greedy policy and updating U along the way.
+
+Complexity: 𝒪(d × |𝒜|×|𝒮|)
 """
 function simulate!(π::HeuristicSearch, U, s)
     𝒫, d = π.𝒫, π.d
-    for d in 1:d
-        a, u = greedy(𝒫, U, s)
+    for d in 1:d                # 𝒪( d × ... (|𝒜|×|𝒮|))
+        a, u = greedy(𝒫, U, s) # 𝒪(|𝒜|×|𝒮|)
         U[s] = u
         s = rand(𝒫.T(s, a))
     end
@@ -318,12 +359,19 @@ end
 
 """
     function (π::HeuristicSearch)(s)
+
+Guranteed to converge to optimal value function iff `Uhi` is indeed an upperbound on `U`.
+
+Complexity: 𝒪(m × d × |𝒮|×|𝒜|)
 """
 function (π::HeuristicSearch)(s)
+    # initialize U with upper bound
     U = [π.Uhi(s) for s in π.𝒫.𝒮]
+    # run m random trajectory simulations to improve estimate on U.
     for i in 1:m
         simulate!(π, U, s)
     end
+    # Return greedy action using improved U.
     return greedy(π.𝒫, U, s).a
 end
 
