@@ -40,7 +40,7 @@ end
 
 Return the mean discounted reward of m random trajectories, each calculated by first sampling the initial state distribution, and then executing rollout from that state, using policy π.
 
-$U(\pi) \approx \frac{1}{m}$
+$U(\pi) = E_{\tau}[R(\tau)] = \sum_{\tau} p(\tau)R(\tau) \approx \frac{1}{m} \sum_{i=1}^{m} R(\tau^{(i)})$
 
 Returns: Ũ(π)
 
