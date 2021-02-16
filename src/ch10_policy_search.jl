@@ -13,7 +13,9 @@ export  MonteCarloPolicyEvaluation,
 
 
 # --------------------------- POLICY SEARCH ---------------------------
-
+#
+#                      PART 1: POLICY EVALUATION
+#
 # 1.  Monte Carlo Policy Evaluation
 #
 # Return the mean discounted reward of m random trajectories,
@@ -64,7 +66,8 @@ Complexity: 𝒪(m × d)
 (U::MonteCarloPolicyEvaluation)(π, θ) = U(s->π(θ, s))
 
 
-
+#                   PART 2: SEARCH
+#
 # 2.  Local Search (Hooke-Jeeves)
 #
 # Start w/initial parameterization and move from neighbor to neighbor
@@ -89,6 +92,8 @@ end
 
 """
     function optimize(M::HookeJeevesPolicySearch, π, U)
+
+Returns: optimized policy parameterization `θ_best`.
 """
 function optimize(M::HookeJeevesPolicySearch, π, U)
     θ, θ′, α, c, ε = copy(M.θ), similar(M.θ), M.α, M.c, M.ε
@@ -99,7 +104,7 @@ function optimize(M::HookeJeevesPolicySearch, π, U)
         for i in 1:n
             for sgn in (-1,1)
                 θ′[i] = θ[i] + sgn*α
-                u′ = U(π, θ′)
+                u′ = U(π, θ′)  # eval: Example: MonteCarloPolicyEvaluation
                 if u′ > best.u
                     best = (i=i, sgn=sgn, u=u′)
                 end
@@ -128,7 +133,7 @@ end
     end
 """
 struct GeneticPolicySearch
-    θs # initial population
+    θs # initial parameter sample population
     σ # initial standard devidation
     m_elite # number of elite samples
     k_max # number of iterations
@@ -136,23 +141,38 @@ end
 
 """
     function optimize(M::GeneticPolicySearch, π, U)
+
+Returns: optimized policy parameterizaion `θ_best`.
 """
 function optimize(M::GeneticPolicySearch, π, U)
     θs, σ = M.θs, M.σ
     n, m = length(first(θs)), length(θs)
+
+    # iterate k_max times
     for k in 1:M.k_max
+        # Estimate U(π) for each θ in sample population
         us = [U(π, θ) for θ in θs]
+        # indicies of high-to-low ordering of value estimates
         sp = sortperm(us, rev=true)
+        # save the top performer
         θ_best = θs[sp[1]]
+        # helper func to sample uniformly one of the top m_elite performers
         rand_elite() = θs[sp[rand(1:M.m_elite)]]
+        # Update sample population with m-1 samples of
+        #  top performers perturbed with added gaussian noise
         θs = [rand_elite() + σ.*randn(n) for i in 1:(m-1)]
+        # also include the top, unperturbed performer
         push!(θs, θ_best)
     end
+
+    # return the best performer from final iteration.
     return last(θs)
 end
 
 
 # 4.  Cross Entropy Method
+#
+# Train distribution which is used to generate approximatly optimal policy parameters.
 
 """
     struct CrossEntropyPolicySearch
@@ -171,13 +191,25 @@ end
 
 """
     function optimize_dist(M::CrossEntropyPolicySearch, π, U)
+
+Train policy parameter distribution `p` for parameterized policy `π` using approximate value function U.
+
+Returns: optimized distribution `p`
+
+Complexity: 𝒪(k_max × m × d)
 """
 function optimize_dist(M::CrossEntropyPolicySearch, π, U)
     p, m, m_elite, k_max = M.p, M.m, M.m_elite, M.k_max
+
+    # iterate k_max times
     for k in 1:k_max
+        # sample parameter distributionn p m times
         θs = rand(p, m)
-        us = [U(π, θs[:,i]) for i in 1:m]
+        # Estimate policy values for each parameter sample
+        us = [U(π, θs[:,i]) for i in 1:m]  # 𝒪(m × d)
+        # Extract top m_elite performers
         θ_elite = θs[:,sortperm(us)[(m-m_elite+1):m]]
+        # refit distribution to elite samples
         p = Distributions.fit(typeof(p), θ_elite)
     end
     return p
@@ -185,6 +217,12 @@ end
 
 """
     function optimize(M, π, U)
+
+CrossEntropyPolicySearch policy parameter optimization.
+
+Returns: mode(p)
+
+Complexity: 𝒪(k_max × m × d)
 """
 function optimize(M, π, U)
     return Distributions.mode(optimize_dist(M, π, U))
@@ -216,6 +254,8 @@ struct EvolutionStrategies
     k_max # number of iterations
 end
 
+
+
 """
     function evolution_strategy_weights(m)
 """
@@ -226,6 +266,8 @@ function evolution_strategy_weights(m)
 
     return ws
 end
+
+
 
 """
     function optimize_dist(M::EvolutionStrategies, π, U)
