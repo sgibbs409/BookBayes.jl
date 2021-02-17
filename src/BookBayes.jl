@@ -47,5 +47,6 @@ include("ch7_Exact_Solution_Methods.jl")
 include("ch8_Approximate_Value_Functions.jl")
 include("ch9_OnlinePlanning.jl")
 include("ch10_policy_search.jl")
+include("ch11_PolicyGradientEstimation.jl")
 
 end # module
