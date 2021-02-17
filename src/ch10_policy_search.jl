@@ -218,7 +218,7 @@ end
 """
     function optimize(M, π, U)
 
-CrossEntropyPolicySearch policy parameter optimization.
+Policy parameter optimization over space of parameter distributions.
 
 Returns: mode(p)
 
@@ -246,9 +246,10 @@ end
     end
 """
 struct EvolutionStrategies
-    D # distribution constructor
+    D # distribution constructor (θ⁽ⁱ⁾ ∼ D(ψ))
     ψ # initial distribution parameterization
     ∇logp # log search likelihood gradient
+            # note: ∇ψlogp = ∇logp(ψ, θ): ∇logp is a function of (ψ, θ)
     m # number of samples
     α # step factor
     k_max # number of iterations
@@ -258,6 +259,9 @@ end
 
 """
     function evolution_strategy_weights(m)
+
+
+Complexity: 𝒪(m)
 """
 function evolution_strategy_weights(m)
     ws = [max(0, log(m/2+1) - log(i)) for i in 1:m]
@@ -276,12 +280,18 @@ function optimize_dist(M::EvolutionStrategies, π, U)
     D, ψ, m, ∇logp, α = M.D, M.ψ, M.m, M.∇logp, M.α
     ws = evolution_strategy_weights(m)
     for k in 1:M.k_max
+        # get m samples θ⁽ⁱ⁾ ∼ D(ψ)
         θs = rand(D(ψ), m)
+        # evaluate value of the m samples
         us = [U(π, θs[:,i]) for i in 1:m]
+        # sort high-to-low
         sp = sortperm(us, rev=true)
+        # ∇ == Est. gradient w.r.t ψ of E[U(θ)], θ ∼ D(ψ)
         ∇ = sum(w.*∇logp(ψ, θs[:,i]) for (w,i) in zip(ws,sp))
+        # gradient ascent
         ψ += α.*∇
     end
+    # return optimized distribution
     return D(ψ)
 end
 
@@ -290,6 +300,8 @@ end
 #
 # Same as Evolutionary Strategies, but use mirroring of samples to reduce
 #   gradient variation.
+#
+# Also, assumes θ ∼ 𝒩(ψ, σ²I).  Uses evolution strategy weights for U(θ⁽ⁱ⁾) 
 """
     struct IsotropicEvolutionStrategies
         ψ # initial mean
