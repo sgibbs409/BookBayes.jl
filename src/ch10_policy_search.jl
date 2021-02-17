@@ -99,7 +99,7 @@ function optimize(M::HookeJeevesPolicySearch, π, U)
     θ, θ′, α, c, ε = copy(M.θ), similar(M.θ), M.α, M.c, M.ε
     u, n = U(π, θ), length(θ)
     while α > ε
-        copyto!(θ′, θ)
+        copyto!(θ′, θ) # θ′← θ
         best = (i=0, sgn=0, u=u)
         for i in 1:n
             for sgn in (-1,1)
@@ -134,7 +134,7 @@ end
 """
 struct GeneticPolicySearch
     θs # initial parameter sample population
-    σ # initial standard devidation
+    σ # initial standard deviation
     m_elite # number of elite samples
     k_max # number of iterations
 end
@@ -159,7 +159,7 @@ function optimize(M::GeneticPolicySearch, π, U)
         # helper func to sample uniformly one of the top m_elite performers
         rand_elite() = θs[sp[rand(1:M.m_elite)]]
         # Update sample population with m-1 samples of
-        #  top performers perturbed with added gaussian noise
+        # ∟ top performers perturbed with added gaussian noise
         θs = [rand_elite() + σ.*randn(n) for i in 1:(m-1)]
         # also include the top, unperturbed performer
         push!(θs, θ_best)
@@ -194,7 +194,7 @@ end
 
 Train policy parameter distribution `p` for parameterized policy `π` using approximate value function U.
 
-Returns: optimized distribution `p`
+Returns: optimized distribution `p` ('p̃')
 
 Complexity: 𝒪(k_max × m × d)
 """
@@ -218,11 +218,11 @@ end
 """
     function optimize(M, π, U)
 
-Policy parameter optimization over space of parameter distributions.
+Policy parameter optimization over space of parameter distributions. For when M is a policy search type that lets policy parameters θ to come from a sampled distribution `p`, whose parameters are directly optimized to maximize E[U(θ)], θ ∼ p.
 
 Returns: mode(p)
 
-Complexity: 𝒪(k_max × m × d)
+Complexity: depends on M
 """
 function optimize(M, π, U)
     return Distributions.mode(optimize_dist(M, π, U))
@@ -237,22 +237,23 @@ end
 #   the Expected Policy Utility function.
 """
     struct EvolutionStrategies
-        D # distribution constructor
-        ψ # initial distribution parameterization
-        ∇logp # log search likelihood gradient
-        m # number of samples
-        α # step factor
-        k_max # number of iterations
+        D       # distribution constructor
+        ψ       # initial distribution parameterization
+        ∇logp   # log search likelihood gradient
+                #   note: ∇ψlogp = ∇logp(ψ, θ): ∇logp is a function of (ψ, θ)
+        m       # number of samples
+        α       # step factor
+        k_max   # number of iterations
     end
 """
 struct EvolutionStrategies
-    D # distribution constructor (θ⁽ⁱ⁾ ∼ D(ψ))
-    ψ # initial distribution parameterization
-    ∇logp # log search likelihood gradient
-            # note: ∇ψlogp = ∇logp(ψ, θ): ∇logp is a function of (ψ, θ)
-    m # number of samples
-    α # step factor
-    k_max # number of iterations
+    D       # distribution constructor (θ⁽ⁱ⁾ ∼ D(ψ))
+    ψ       # initial distribution parameterization
+    ∇logp   # log search likelihood gradient
+            #   note: ∇ψlogp = ∇logp(ψ, θ): ∇logp is a function of (ψ, θ)
+    m       # number of samples
+    α       # step factor
+    k_max   # number of iterations
 end
 
 
@@ -301,7 +302,7 @@ end
 # Same as Evolutionary Strategies, but use mirroring of samples to reduce
 #   gradient variation.
 #
-# Also, assumes θ ∼ 𝒩(ψ, σ²I).  Uses evolution strategy weights for U(θ⁽ⁱ⁾) 
+# Also, assumes θ ∼ 𝒩(ψ, σ²I).  Uses evolution strategy weights for U(θ⁽ⁱ⁾)
 """
     struct IsotropicEvolutionStrategies
         ψ # initial mean
