@@ -58,6 +58,7 @@ Calculate state-action value function Q(s,a) from U and valid state transition d
 
     return R(s,a) + γ*sum(T(s,a,s′)*U[i] for (i,s′) in enumerate(𝒮))
 
+Complexity: 𝒪(|𝒮|)
 """
 function lookahead(𝒫::MDP, U::Vector, s, a)
     𝒮, T, R, γ = 𝒫.𝒮, 𝒫.T, 𝒫.R, 𝒫.γ
@@ -70,6 +71,8 @@ end
     function iterative_policy_evaluation(𝒫::MDP, π, k_max)
 
  Approximate policy evaluation for policy `π`, using k_max iterations of 1-step lookahead, starting from U(s) = 0.
+
+Complexity: 𝒪(|𝒮|² × k_max)
 """
 function iterative_policy_evaluation(𝒫::MDP, π, k_max)
     𝒮, T, R, γ = 𝒫.𝒮, 𝒫.T, 𝒫.R, 𝒫.γ
@@ -118,6 +121,8 @@ end
 Find the greedy action and its expected utility starting from state `s` and using estimated optimal (greedy) state value function `U`.  Calculates estimate as maximum over action space of 1-step lookahead:
 
     u, a = _findmax(a->lookahead(𝒫, U, s, a), 𝒫.𝒜)
+
+Complexity: 𝒪(|𝒜|×|𝒮|)
 """
 function greedy(𝒫::MDP, U, s)
     u, a = _findmax(a->lookahead(𝒫, U, s, a), 𝒫.𝒜)
