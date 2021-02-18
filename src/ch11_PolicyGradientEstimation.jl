@@ -6,12 +6,13 @@
 export  simulate,
         FiniteDifferenceGradient,
         gradient,
-        RegressionGradient
+        RegressionGradient,
+        RewardToGoGradient
 
 """
     function simulate(𝒫::MDP, s, π, d)
 
-Generate depth-'d' sequence of state-action-reward tuples following policy `π` starting from state `s`.
+Generate depth-'d' sequence (trajectory `τ`) of state-action-reward tuples following policy `π` starting from state `s`.
 """
 function simulate(𝒫::MDP, s, π, d)
     τ = []
@@ -139,4 +140,84 @@ function gradient(M::RegressionGradient, π, θ)
     ΔU = [U(θ + Δθ) - U(θ) for Δθ in ΔΘ]
     # direct solve least-squares solution of gradient using pseudoinverse
     return pinv(reduce(hcat, ΔΘ)') * ΔU
+end
+
+
+
+"""
+    struct LikelihoodRatioGradient
+        𝒫 # problem
+        b # initial state distribution
+        d # depth
+        m # number of samples
+        ∇logπ # gradient of log likelihood
+    end
+"""
+struct LikelihoodRatioGradient
+    𝒫 # problem
+    b # initial state distribution
+    d # depth
+    m # number of samples
+    ∇logπ   # gradient of log likelihood
+            #  ie: gradient w.r.t. θ of π(θ,a,s),
+            #   where π(θ,a,s) = probability(a | s; θ)
+end
+
+"""
+    function gradient(M::LikelihoodRatioGradient, π, θ)
+
+
+"""
+function gradient(M::LikelihoodRatioGradient, π, θ)
+    𝒫, b, d, m, ∇logπ, γ = M.𝒫, M.b, M.d, M.m, M.∇logπ, M.𝒫.γ
+
+    # πθ: stochastic/non-deterministic function of s
+    πθ(s) = π(θ, s)
+
+    # Calculate total discounted reward from trajectory τ
+    R(τ) = sum(r*γ^(k-1) for (k, (s,a,r)) in enumerate(τ))
+
+    # ∇₀log[p₀(τ)] × R(τ) = ∑ₖ₌₁(∇₀log[π(θ,a⁽ᵏ⁾,s⁽ᵏ⁾)]) × R(τ)
+    ∇U(τ) = sum(∇logπ(θ, a, s) for (s,a) in τ)*R(τ)
+
+    # monte carlo estimate of ∇₀U(θ) = 𝔼ₜ[∇₀log(p₀(τ)R(τ))] ∼ τ
+    return mean(∇U(simulate(𝒫, rand(b), πθ, d)) for i in 1:m)
+end
+
+
+
+"""
+    struct RewardToGoGradient
+        𝒫 # problem
+        b # initial state distribution
+        d # depth
+        m # number of samples
+        ∇logπ # gradient of log likelihood
+    end
+"""
+struct RewardToGoGradient
+    𝒫 # problem
+    b # initial state distribution
+    d # depth
+    m # number of samples
+    ∇logπ # gradient of log likelihood
+end
+
+
+"""
+    function gradient(M::RewardToGoGradient, π, θ)
+
+
+"""
+function gradient(M::RewardToGoGradient, π, θ)
+    𝒫, b, d, m, ∇logπ, γ = M.𝒫, M.b, M.d, M.m, M.∇logπ, M.𝒫.γ
+    πθ(s) = π(θ, s)
+
+    # see eq. 11.24: == γᵏ⁻¹ × r_to-go⁽ᵏ⁾
+    R(τ, k) = sum(r*γ^(l-1) for (l,(s,a,r)) in zip(k:d, τ[k:end]))
+    # see eq. 11.24
+    ∇U(τ) = sum(∇logπ(θ, a, s)*R(τ,k) for (k, (s,a,r)) in enumerate(τ))
+
+    # monte carlo approximation to 𝔼xpectation over τ
+    return mean(∇U(simulate(𝒫, rand(b), πθ, d)) for i in 1:m)
 end
