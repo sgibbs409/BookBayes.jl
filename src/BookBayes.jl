@@ -48,5 +48,6 @@ include("ch8_Approximate_Value_Functions.jl")
 include("ch9_OnlinePlanning.jl")
 include("ch10_policy_search.jl")
 include("ch11_PolicyGradientEstimation.jl")
+include("ch12_PolicyGradientOptimization.jl")
 
 end # module
