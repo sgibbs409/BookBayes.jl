@@ -7,7 +7,8 @@ export  simulate,
         FiniteDifferenceGradient,
         gradient,
         RegressionGradient,
-        RewardToGoGradient
+        RewardToGoGradient,
+        BaselineSubtractionGradient
 
 """
     function simulate(𝒫::MDP, s, π, d)
@@ -220,4 +221,53 @@ function gradient(M::RewardToGoGradient, π, θ)
 
     # monte carlo approximation to 𝔼xpectation over τ
     return mean(∇U(simulate(𝒫, rand(b), πθ, d)) for i in 1:m)
+end
+
+
+
+
+"""
+    struct BaselineSubtractionGradient
+        𝒫 # problem
+        b # initial state distribution
+        d # depth
+        m # number of samples
+        ∇logπ # gradient of log likelihood
+    end
+"""
+struct BaselineSubtractionGradient
+    𝒫 # problem
+    b # initial state distribution
+    d # depth
+    m # number of samples
+    ∇logπ # gradient of log likelihood
+end
+
+
+"""
+    function gradient(M::BaselineSubtractionGradient, π, θ)
+
+
+"""
+function gradient(M::BaselineSubtractionGradient, π, θ)
+    𝒫, b, d, m, ∇logπ, γ = M.𝒫, M.b, M.d, M.m, M.∇logπ, M.𝒫.γ
+    πθ(s) = π(θ, s)
+
+    l(a, s, k) = ∇logπ(θ, a, s)*γ^(k-1)
+    # r_to-go
+    R(τ, k) = sum(r*γ^(j-1) for (j,(s,a,r)) in enumerate(τ[k:end]))
+
+    numer(τ) = sum(l(a,s,k).^2*R(τ,k) for (k,(s,a,r)) in enumerate(τ))
+
+    denom(τ) = sum(l(a,s,k).^2 for (k,(s,a)) in enumerate(τ))
+    # 11.43
+    base(τ) = numer(τ) ./ denom(τ)
+
+    trajs = [simulate(𝒫, rand(b), πθ, d) for i in 1:m]
+    # 11.43
+    rbase = mean(base(τ) for τ in trajs)
+    # 11.28
+    ∇U(τ) = sum(l(a,s,k).*(R(τ,k).-rbase) for (k,(s,a,r)) in enumerate(τ))
+    # 11.28
+    return mean(∇U(τ) for τ in trajs)
 end
